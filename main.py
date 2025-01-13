@@ -4,6 +4,7 @@ from typing import Optional, List
 from sqlmodel import Session, create_engine, Field, SQLModel, select
 import jwt
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from passlib.context import CryptContext
 
 app = FastAPI()
 
@@ -18,12 +19,16 @@ bearer_scheme = HTTPBearer()
 connect_args = {"check_same_thread": False}
 engine = create_engine(sqlite_url, connect_args=connect_args)
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True)
+    hashed_password: str
 
 class CreateUser(BaseModel):
     name: str
+    password: str
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
@@ -52,8 +57,8 @@ def generate_token(user: User):
 @app.post("/login")
 def login(user: CreateUser, session: Session = Depends(get_session)):
     db_user = session.exec(select(User).where(User.name == user.name)).first()
-    if db_user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username")
+    if db_user is None or not pwd_context.verify(user.password, db_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
     return {"token": generate_token(db_user)}
 
 @app.get("/me")
@@ -63,10 +68,20 @@ def me(user=Depends(get_user)):
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
+    with Session(engine) as session:
+        # Add test users
+        test_users = [
+            CreateUser(name="testuser1", password="password1"),
+            CreateUser(name="testuser2", password="password2"),
+            CreateUser(name="testuser3", password="password3"),
+        ]
+        for user_create in test_users:
+            create_user(user_create, session)
 
 @app.post("/users/", response_model=User)
 def create_user(body: CreateUser, session: Session = Depends(get_session)) -> User:
-    user = User(name=body.name)
+    hashed_password = pwd_context.hash(body.password)
+    user = User(name=body.name, hashed_password=hashed_password)
     session.add(user)
     session.commit()
     session.refresh(user)
