@@ -69,7 +69,6 @@ def me(user=Depends(get_user)):
 def on_startup():
     create_db_and_tables()
     with Session(engine) as session:
-        # Add test users
         test_users = [
             CreateUser(name="testuser1", password="password1"),
             CreateUser(name="testuser2", password="password2"),
