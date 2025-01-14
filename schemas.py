@@ -11,10 +11,12 @@ class CreateAccount(BaseModel):
     isMain: bool = False
 
 class CreateTransaction(BaseModel):
-    sender_id: int
-    receiver_id: int
+    sender_id: str
+    receiver_id: str
     amount: float
-    status: int
 
 class CreateDeposit(BaseModel):
     amount: float
+
+class UserResponse(BaseModel):
+    email: str
