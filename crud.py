@@ -54,9 +54,12 @@ def read_accounts(user: User = Depends(get_user), session: Session = Depends(get
     accounts = session.exec(select(Account).where(Account.user_id == user.id)).all()
     return accounts
 
+
 @router.get("/accounts/{account_number}", response_model=Optional[Account])
-def read_account(account_id: int, session: Session = Depends(get_session)):
-    account = session.get(Account, account_id)
+def read_account(account_number: str, user: User = Depends(get_user), session: Session = Depends(get_session)):
+    account = session.exec(select(Account).where(Account.account_number == account_number)).first()
+    if account is None or account.user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found or you do not have permission to access this account")
     return account
 
 @router.post("/deposit/", response_model=Deposit)

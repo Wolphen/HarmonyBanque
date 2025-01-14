@@ -15,25 +15,37 @@ async def process_transaction(transaction_id: int, session: Session):
     with session:
         transaction = session.get(Transaction, transaction_id)
         if transaction and transaction.status == 1:
+            # Update the transaction status to 2 (completed)
             transaction.status = 2
             session.add(transaction)
+            
+            # Credit the receiver's account
+            receiver_account = session.exec(select(Account).where(Account.account_number == transaction.receiver_id)).first()
+            if receiver_account:
+                receiver_account.balance += transaction.amount
+                session.add(receiver_account)
+            
             session.commit()
 
 @router.post("/transactions/", response_model=Transaction)
 async def create_transaction(body: CreateTransaction, user: User = Depends(get_user), session: Session = Depends(get_session)) -> Transaction:
-    accounts = session.exec(select(Account).where(Account.user_id == user.id, Account.account_number == body.sender_id)).first()
-    if accounts is None:
+    sender_account = session.exec(select(Account).where(Account.user_id == user.id, Account.account_number == body.sender_id)).first()
+    if sender_account is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
     
-    if accounts.balance < body.amount:
+    if sender_account.balance < body.amount:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not enough money")
 
     if body.amount < 1:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Amount must be positive and more than 1")
 
-    accounts_receiver = session.exec(select(Account).where(Account.account_number == body.receiver_id)).first()
-    if accounts_receiver is None:
+    receiver_account = session.exec(select(Account).where(Account.account_number == body.receiver_id)).first()
+    if receiver_account is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receiver account not found")
+
+    # Decrement the sender's account balance
+    sender_account.balance -= body.amount
+    session.add(sender_account)
 
     transaction = Transaction(
         sender_id=body.sender_id,
@@ -60,7 +72,12 @@ def cancel_transaction(transaction_id: int, user: User = Depends(get_user), sess
     if sender_account is None or sender_account.user_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to cancel this transaction")
 
-    transaction.status = 0  # Transaction canceled
+    # Refund the sender's account balance
+    sender_account.balance += transaction.amount
+    session.add(sender_account)
+
+    # Update the transaction status to 0 (canceled)
+    transaction.status = 0
     session.add(transaction)
     session.commit()
     session.refresh(transaction)
@@ -68,7 +85,9 @@ def cancel_transaction(transaction_id: int, user: User = Depends(get_user), sess
 
 @router.get("/transactions/", response_model=List[Transaction])
 def read_transactions(user: User = Depends(get_user), session: Session = Depends(get_session)):
-    transactions = session.exec(select(Transaction).where(Transaction.sender_id == user.id)).all()
+    transactions = session.exec(select(Transaction).where(
+        (Transaction.sender_id == user.id) | (Transaction.receiver_id == user.id)
+    )).all()
     return transactions
 
 @router.delete("/transactions/{transaction_id}", response_model=Transaction)
