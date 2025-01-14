@@ -4,7 +4,7 @@ from datetime import datetime
 
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(index=True)
+    email: str = Field(index=True, unique=True)
     hashed_password: str
 
 class Account(SQLModel, table=True):
@@ -12,7 +12,7 @@ class Account(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     balance: float
     creation_date: datetime = Field(default_factory=datetime.utcnow)
-    account_number: str
+    account_number: str = Field(index=True, unique=True)
     isMain: bool = False
 
 class Transaction(SQLModel, table=True):
@@ -25,6 +25,6 @@ class Transaction(SQLModel, table=True):
 
 class Deposit(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    account_id: int = Field(foreign_key="account.id")
+    account_number: str = Field(foreign_key="account.account_number")
     amount: float
     deposit_date: datetime = Field(default_factory=datetime.utcnow)
