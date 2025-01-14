@@ -18,3 +18,6 @@ class CreateTransaction(BaseModel):
 
 class CreateDeposit(BaseModel):
     amount: float
+
+class UserResponse(BaseModel):
+    email: str
