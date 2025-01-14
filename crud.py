@@ -4,17 +4,14 @@ from models import User, Account, Deposit
 from schemas import CreateUser, CreateAccount, CreateDeposit
 from database import get_session
 from typing import List, Optional
-from passlib.context import CryptContext
 from auth import get_user
 
-router = APIRouter()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 router = APIRouter()
 
 @router.post("/users/", response_model=User)
 def create_user(body: CreateUser, session: Session = Depends(get_session)) -> User:
     hashed_password = pwd_context.hash(body.password)
-    user = User(name=body.name, hashed_password=hashed_password)
+    user = User(email=body.email, hashed_password=hashed_password)
     session.add(user)
     session.commit()
     session.refresh(user)
@@ -28,10 +25,6 @@ def read_users(session: Session = Depends(get_session)):
 @router.get("/users/{user_id}", response_model=Optional[User])
 def read_user(user_id: int, session: Session = Depends(get_session)):
     user = session.get(User, user_id)
-    return user
-
-@router.get("/me", response_model=User)
-def read_me(user: User = Depends(get_user)):
     return user
 
 @router.post("/accounts/", response_model=Account)
@@ -58,10 +51,10 @@ def read_account(account_id: int, session: Session = Depends(get_session)):
 
 @router.post("/deposit/", response_model=Deposit)
 def create_deposit(body: CreateDeposit, user: User = Depends(get_user), session: Session = Depends(get_session)) -> Deposit:
-    # Find the account by user ID
-    account = session.exec(select(Account).where(Account.user_id == user.id)).first()
+    # Find the main account by user ID and isMain=True
+    account = session.exec(select(Account).where(Account.user_id == user.id, Account.isMain == True)).first()
     if not account:
-        raise HTTPException(status_code=404, detail="Not connected to any account")
+        raise HTTPException(status_code=404, detail="Main account not found")
     
     # Update the account balance
     account.balance += body.amount
