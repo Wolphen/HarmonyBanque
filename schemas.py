@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 class CreateUser(BaseModel):
-    name: str
+    email: str
     password: str
 
 class CreateAccount(BaseModel):
@@ -17,5 +17,4 @@ class CreateTransaction(BaseModel):
     status: int
 
 class CreateDeposit(BaseModel):
-    account_id: int
     amount: float

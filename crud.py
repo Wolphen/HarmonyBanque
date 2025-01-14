@@ -1,10 +1,14 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from models import User, Account, Deposit
 from schemas import CreateUser, CreateAccount, CreateDeposit
 from database import get_session
 from typing import List, Optional
+from passlib.context import CryptContext
+from auth import get_user
 
+router = APIRouter()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 router = APIRouter()
 
 @router.post("/users/", response_model=User)
@@ -24,6 +28,10 @@ def read_users(session: Session = Depends(get_session)):
 @router.get("/users/{user_id}", response_model=Optional[User])
 def read_user(user_id: int, session: Session = Depends(get_session)):
     user = session.get(User, user_id)
+    return user
+
+@router.get("/me", response_model=User)
+def read_me(user: User = Depends(get_user)):
     return user
 
 @router.post("/accounts/", response_model=Account)
@@ -49,8 +57,18 @@ def read_account(account_id: int, session: Session = Depends(get_session)):
     return account
 
 @router.post("/deposit/", response_model=Deposit)
-def create_deposit(body: CreateDeposit, session: Session = Depends(get_session)) -> Deposit:
-    deposit = Deposit(account_id=body.account_id, amount=body.amount)
+def create_deposit(body: CreateDeposit, user: User = Depends(get_user), session: Session = Depends(get_session)) -> Deposit:
+    # Find the account by user ID
+    account = session.exec(select(Account).where(Account.user_id == user.id)).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="Not connected to any account")
+    
+    # Update the account balance
+    account.balance += body.amount
+    session.add(account)
+    
+    # Create the deposit record
+    deposit = Deposit(account_number=account.account_number, amount=body.amount)
     session.add(deposit)
     session.commit()
     session.refresh(deposit)

@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from passlib.context import CryptContext
 import jwt
-from models import User
+from models import User, Account
 from schemas import CreateUser
-from database import get_session
+from database import get_session, engine
 from sqlmodel import select, Session
+import random
 
 router = APIRouter()
 
@@ -15,22 +16,49 @@ bearer_scheme = HTTPBearer()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def generate_token(user: User):
-    return jwt.encode({"id": user.id, "name": user.name}, secret_key, algorithm=algorithm)
+    return jwt.encode({"id": user.id, "email": user.email}, secret_key, algorithm=algorithm)
+
+def generate_unique_account_number(session: Session) -> str:
+    while True:
+        account_number = f"ACC{random.randint(100000, 999999)}"
+        existing_account = session.exec(select(Account).where(Account.account_number == account_number)).first()
+        if existing_account is None:
+            return account_number
 
 @router.post("/login")
 def login(user: CreateUser, session: Session = Depends(get_session)):
-    db_user = session.exec(select(User).where(User.name == user.name)).first()
+    db_user = session.exec(select(User).where(User.email == user.email)).first()
     if db_user is None or not pwd_context.verify(user.password, db_user.hashed_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
     return {"token": generate_token(db_user)}
 
 @router.post("/register", response_model=User)
 def register(user: CreateUser, session: Session = Depends(get_session)):
+    # Check if the email already exists
+    existing_user = session.exec(select(User).where(User.email == user.email)).first()
+    if existing_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+    
+    # Create user
     hashed_password = pwd_context.hash(user.password)
-    db_user = User(name=user.name, hashed_password=hashed_password)
+    db_user = User(email=user.email, hashed_password=hashed_password)
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
+    
+    # Generate unique account number
+    account_number = generate_unique_account_number(session)
+    
+    # Create account for the user
+    account = Account(
+        user_id=db_user.id,
+        balance=0.0,  # Initial balance
+        account_number=account_number  # Unique account number
+    )
+    session.add(account)
+    session.commit()
+    session.refresh(account)
+    
     return db_user
 
 def get_user(authorization: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
