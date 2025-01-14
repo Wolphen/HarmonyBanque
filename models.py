@@ -17,8 +17,8 @@ class Account(SQLModel, table=True):
 
 class Transaction(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    sender_id: int = Field(foreign_key="account.id")
-    receiver_id: int = Field(foreign_key="account.id")
+    sender_id: str = Field(foreign_key="account.account_number")
+    receiver_id: str = Field(foreign_key="account.account_number")
     amount: float
     transaction_date: datetime = Field(default_factory=datetime.utcnow)
     status: int 

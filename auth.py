@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from passlib.context import CryptContext
 import jwt
-from models import User, Account
-from schemas import CreateUser, UserResponse
+from models import User, Account, Deposit
+from schemas import CreateUser, UserResponse, CreateAccount, CreateDeposit
 from database import get_session, engine
 from sqlmodel import select, Session
 import random
@@ -70,9 +70,25 @@ def register(user: CreateUser, session: Session = Depends(get_session)):
         account_number=account_number,  # Unique account number
         isMain=True  # Main account
     )
+    
     session.add(account)
     session.commit()
     session.refresh(account)
+    
+    amount = 100.0  # Welcome Offer
+    
+    deposit = Deposit(
+        account_number=account_number,
+        amount=amount  # Welcome Offer
+    )
+    
+    
+    session.add(deposit)
+    session.commit()
+    session.refresh(deposit)
+    
+    account.balance += amount
+    session.add(account)
     
     return db_user
 
