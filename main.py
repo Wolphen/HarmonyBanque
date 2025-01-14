@@ -8,6 +8,8 @@ app = FastAPI()
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
+    
+    
 
 app.include_router(auth_router, prefix="/auth")
 app.include_router(crud_router, prefix="/crud")
