@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 from database import get_session
 from models import Account, Transaction, User
 from schemas import CreateTransaction
-from auth import get_user
+from route.auth import get_user
 
 router = APIRouter()
 
@@ -43,19 +43,54 @@ async def create_transaction(body: CreateTransaction, user: User = Depends(get_u
     if receiver_account is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receiver account not found")
 
-    # Decrement the sender's account balance
-    sender_account.balance -= body.amount
-    session.add(sender_account)
+    if receiver_account.isMain == False and (receiver_account.balance + body.amount) > 50000:
+        sender_account.balance -= body.amount
+        session.add(sender_account)
+        transaction = Transaction(
+            sender_id=body.sender_id,
+            receiver_id=body.receiver_id,
+            amount=body.amount,
+            status=1  
+        )
+        session.add(transaction)
+        session.commit()
+        session.refresh(transaction)
+        
+        receiver_user_id = receiver_account.user_id
+        mainAccount = session.exec(select(Account).where(Account.user_id == receiver_user_id, Account.isMain == True)).first()
+        
+        transaction2 = Transaction(
+            sender_id=receiver_account.account_number,
+            receiver_id=mainAccount.account_number,
+            amount=(receiver_account.balance + body.amount) - 50000,
+            status=2  
+        )
+        mainAccount.balance += (receiver_account.balance + body.amount) - 50000
+        receiver_account.balance = 50000
+        session.add(receiver_account)
+        session.add(mainAccount)
+        session.add(transaction2)
+        session.commit()
+        session.refresh(transaction2)
+        
+    else :
+        sender_account.balance -= body.amount
+        session.add(sender_account)
+        transaction = Transaction(
+            sender_id=body.sender_id,
+            receiver_id=body.receiver_id,
+            amount=body.amount,
+            status=1  
+        )
+        session.add(transaction)
+        session.commit()
+        session.refresh(transaction)
+        
+        
+        
 
-    transaction = Transaction(
-        sender_id=body.sender_id,
-        receiver_id=body.receiver_id,
-        amount=body.amount,
-        status=1  # Transaction in progress
-    )
-    session.add(transaction)
-    session.commit()
-    session.refresh(transaction)
+
+    
 
     # Start the async task to process the transaction after 10 seconds
     asyncio.create_task(process_transaction(transaction.id, session))

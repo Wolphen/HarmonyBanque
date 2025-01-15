@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from database import create_db_and_tables
-from auth import router as auth_router
-from deposit import router as deposit_router
-from transactions import router as trans_router
-from account import router as account_router
-from users import router as users_router
+from route.auth import router as auth_router
+from route.deposit import router as deposit_router
+from route.transactions import router as trans_router
+from route.account import router as account_router
+from route.users import router as users_router
 
 app = FastAPI()
 

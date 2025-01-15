@@ -4,7 +4,7 @@ from models import User, Account, Deposit, Transaction
 from schemas import CreateUser, CreateAccount, CreateDeposit
 from database import get_session
 from typing import List, Optional
-from auth import get_user
+from route.auth import get_user
 
 router = APIRouter()
 

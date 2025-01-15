@@ -20,7 +20,7 @@ def generate_token(user: User):
 
 def generate_unique_account_number(session: Session) -> str:
     while True:
-        account_number = f"ACC{random.randint(100000, 999999)}"
+        account_number = f"FR76 30044 00001 {random.randint(10000000000, 99999999999)} {random.randint(10, 99)}"
         existing_account = session.exec(select(Account).where(Account.account_number == account_number)).first()
         if existing_account is None:
             return account_number
