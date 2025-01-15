@@ -16,6 +16,7 @@ class CreateTransaction(BaseModel):
     amount: float
 
 class CreateDeposit(BaseModel):
+    account_number: str
     amount: float
 
 class UserResponse(BaseModel):
