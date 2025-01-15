@@ -1,6 +1,6 @@
 import asyncio
 from asyncio import sleep
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from database import get_session
@@ -11,7 +11,7 @@ from auth import get_user
 router = APIRouter()
 
 async def process_transaction(transaction_id: int, session: Session):
-    await sleep(10)
+    await sleep(5)
     with session:
         transaction = session.get(Transaction, transaction_id)
         if transaction and transaction.status == 1:
@@ -83,7 +83,7 @@ def cancel_transaction(transaction_id: int, user: User = Depends(get_user), sess
     session.refresh(transaction)
     return transaction
 
-@router.get("/transactions/{account_number}", response_model=Transaction, tags=['transactions'])
+@router.get("/transactions/{account_number}", response_model=List[Transaction], tags=['transactions'])
 def read_transactions(account_number : str, session: Session = Depends(get_session)):
     transactions = session.exec(select(Transaction).where((Transaction.sender_id == account_number) | (Transaction.receiver_id == account_number))).all()
     if transactions is None:

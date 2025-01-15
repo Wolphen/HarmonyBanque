@@ -1,7 +1,7 @@
 import random
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-from models import User, Account, Deposit
+from models import User, Account, Deposit, Transaction
 from schemas import CreateUser, CreateAccount, CreateDeposit
 from database import get_session
 from typing import List, Optional
@@ -66,20 +66,35 @@ def read_account(account_number: str, user: User = Depends(get_user), session: S
 
 @router.post("/desactivate/{account_number}", tags=['account'])
 def deactivate_account(account_number: str, user: User = Depends(get_user), session: Session = Depends(get_session)):
-    account = session.exec(select(Account).where(Account.account_number == account_number, Account.isActive == True, Account.user_id == user.id, Account.isMain == False)).first()
+    account = session.exec(select(Account).where(Account.account_number == account_number, Account.isActive == True, Account.user_id == user.id)).first()
     mainAccount = session.exec(select(Account).where(Account.user_id == user.id and Account.isMain == True)).first()
 
-    transactions = session.exec(select(Transaction).where((Transaction.sender_id == user.id) | (Transaction.receiver_id == user.id) , )).all()
+    transactions = session.exec(select(Transaction).where((Transaction.sender_id == account_number) | (Transaction.receiver_id == account_number) , Transaction.status == 1)).all()
 
-    mainAccount.balance += account.balance
-    account.balance = 0
+    if account.isMain == True:
+        return "Impossible de désactiver votre compte principal"
+    
+    elif len(transactions) == 0:
+        transaction = Transaction(
+            sender_id=account_number,
+            receiver_id=mainAccount.account_number,
+            amount= account.balance,
+            status=2
+        )   
+            
+        mainAccount.balance += account.balance
+        account.balance = 0
 
-    account.isActive = False
-    session.add(account)
-    session.add(mainAccount)
-    session.commit()
-
-    return [account, mainAccount]
+        account.isActive = False
+        session.add(account)
+        session.add(mainAccount)
+        session.commit()
+        return "compte desactivé avec succès"
+        
+    elif account is None:
+        return "Compte introuvable"
+    else:
+        return "Des transactions sont en cours"
 
 
 @router.post("/deposit/", response_model=Deposit, tags=['deposit'])
