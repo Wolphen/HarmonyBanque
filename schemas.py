@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 class CreateUser(BaseModel):
     email: str
@@ -21,3 +22,12 @@ class CreateDeposit(BaseModel):
 
 class UserResponse(BaseModel):
     email: str
+
+class IncomeResponse(BaseModel):
+    account_number: str
+    amount: float
+    date: datetime
+    type: str
+
+    class Config:
+        orm_mode = True

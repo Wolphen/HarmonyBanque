@@ -10,6 +10,42 @@ from route.auth import get_user
 
 router = APIRouter()
 
+async def complete_pending_transaction(transaction: Transaction, session: Session):
+    if transaction.status == 1:
+        transaction.status = 2
+        session.add(transaction)
+
+        receiver_account = session.exec(
+            select(Account).where(Account.account_number == transaction.receiver_id)
+        ).first()
+        if receiver_account:
+            receiver_account.balance += transaction.amount
+            session.add(receiver_account)
+
+            if not receiver_account.isMain and receiver_account.balance > 50000:
+                receiver_user_id = receiver_account.user_id
+                main_account = session.exec(
+                    select(Account).where(Account.user_id == receiver_user_id, Account.isMain == True)
+                ).first()
+
+                if main_account:
+                    excess_amount = receiver_account.balance - 50000
+                    transaction2 = Transaction(
+                        sender_id=receiver_account.account_number,
+                        receiver_id=main_account.account_number,
+                        amount=excess_amount,
+                        status=2 
+                    )
+                    main_account.balance += excess_amount
+                    receiver_account.balance = 50000
+
+                    session.add(receiver_account)
+                    session.add(main_account)
+                    session.add(transaction2)
+
+        session.commit()
+        
+        
 async def process_transaction(transaction_id: int, session: Session):
     await sleep(10)  
     with session:

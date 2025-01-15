@@ -2,7 +2,7 @@ import random
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from models import User, Account, Deposit, Transaction
-from schemas import CreateUser, CreateAccount, CreateDeposit
+from schemas import CreateUser, CreateAccount, CreateDeposit, IncomeResponse
 from database import get_session
 from typing import List, Optional
 from route.auth import get_user
@@ -87,3 +87,55 @@ def read_transactions(account_number : str, session: Session = Depends(get_sessi
     if transactions is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Aucune transactions")
     return transactions
+
+@router.get("/{account_number}/income", response_model=List[IncomeResponse], tags=['account'])
+def get_account_income(account_number: str, user: User = Depends(get_user), session: Session = Depends(get_session)) -> List[IncomeResponse]:
+    account = session.exec(
+        select(Account).where(
+            Account.account_number == account_number,
+            Account.user_id == user.id,
+            Account.isActive == True
+        )
+    ).first()
+
+    if not account:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
+
+    deposits = session.exec(
+        select(Deposit).where(Deposit.account_number == account_number)
+    ).all()
+
+    received_transactions = session.exec(
+        select(Transaction).where(Transaction.receiver_id == account_number)
+    ).all()
+
+    income = [
+        IncomeResponse(account_number=d.account_number, amount=d.amount, date=d.deposit_date, type="deposit")
+        for d in deposits
+    ] + [
+        IncomeResponse(account_number=t.receiver_id, amount=t.amount, date=t.transaction_date, type="transaction")
+        for t in received_transactions
+    ]
+
+    income.sort(key=lambda x: x.date)
+
+    return income
+
+@router.get("/{account_number}/expenses", response_model=List[Transaction], tags=['account'])
+def get_account_expenses(account_number: str, user: User = Depends(get_user), session: Session = Depends(get_session)) -> List[Transaction]:
+    account = session.exec(
+        select(Account).where(
+            Account.account_number == account_number,
+            Account.user_id == user.id,
+            Account.isActive == True
+        )
+    ).first()
+
+    if not account:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
+
+    sent_transactions = session.exec(
+        select(Transaction).where(Transaction.sender_id == account_number).order_by(Transaction.transaction_date)
+    ).all()
+
+    return sent_transactions
