@@ -27,7 +27,7 @@ async def process_transaction(transaction_id: int, session: Session):
             
             session.commit()
 
-@router.post("/transactions/", response_model=Transaction, tags=['transactions'])
+@router.post("/", response_model=Transaction, tags=['transactions'])
 async def create_transaction(body: CreateTransaction, user: User = Depends(get_user), session: Session = Depends(get_session)) -> Transaction:
     sender_account = session.exec(select(Account).where(Account.user_id == user.id, Account.account_number == body.sender_id, Account.isActive == True)).first()
     if sender_account is None:
@@ -62,7 +62,7 @@ async def create_transaction(body: CreateTransaction, user: User = Depends(get_u
 
     return transaction
 
-@router.post("/transactions/cancel/{transaction_id}", response_model=Transaction, tags=['transactions'])
+@router.post("/{transaction_id}/cancel", response_model=Transaction, tags=['transactions'])
 def cancel_transaction(transaction_id: int, user: User = Depends(get_user), session: Session = Depends(get_session)) -> Transaction:
     transaction = session.get(Transaction, transaction_id)
     if transaction is None or transaction.status != 1:
@@ -83,14 +83,26 @@ def cancel_transaction(transaction_id: int, user: User = Depends(get_user), sess
     session.refresh(transaction)
     return transaction
 
-@router.get("/transactions/{account_number}", response_model=List[Transaction], tags=['transactions'])
-def read_transactions(account_number : str, session: Session = Depends(get_session)):
-    transactions = session.exec(select(Transaction).where((Transaction.sender_id == account_number) | (Transaction.receiver_id == account_number))).all()
-    if transactions is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Aucune transactions")
-    return transactions
+@router.get("/{transaction_id}/details", response_model=Transaction, tags=['transactions'],)
+def read_transactions(transaction_id : int, session: Session = Depends(get_session), user: User = Depends(get_user)):
+    transaction = session.exec(select(Transaction).where(Transaction.id == transaction_id)).first() 
+    if transaction is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pas de transaction trouvé")
+    transactionSender = transaction.sender_id
+    transactionReceiver = transaction.receiver_id
+    
+    accountSender = session.exec(select(Account).where(Account.account_number == transactionSender)).first()
+    accountReceiver = session.exec(select(Account).where(Account.account_number == transactionReceiver)).first()
+    
+    sender = accountSender.user_id
+    receiver = accountReceiver.user_id
+    
+    if user.id != sender or user.id != receiver:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vous n'avez pas accès à cette transaction")
+    
+    return transaction
 
-@router.delete("/transactions/{transaction_id}", response_model=Transaction, tags=['transactions'])
+@router.delete("/{transaction_id}", response_model=Transaction, tags=['transactions'])
 def delete_transaction(transaction_id: int, user: User = Depends(get_user), session: Session = Depends(get_session)) -> Transaction:
     transaction = session.get(Transaction, transaction_id)
     if transaction is None:
