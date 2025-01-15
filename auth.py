@@ -39,14 +39,14 @@ def get_user(authorization: HTTPAuthorizationCredentials = Depends(bearer_scheme
     except jwt.PyJWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-@router.post("/login")
+@router.post("/login", tags=['auth'])
 def login(user: CreateUser, session: Session = Depends(get_session)):
     db_user = session.exec(select(User).where(User.email == user.email)).first()
     if db_user is None or not pwd_context.verify(user.password, db_user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
     return {"token": generate_token(db_user)}
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register", response_model=UserResponse, tags=['auth'])
 def register(user: CreateUser, session: Session = Depends(get_session)):
     # Check if the email already exists
     existing_user = session.exec(select(User).where(User.email == user.email)).first()
@@ -81,17 +81,16 @@ def register(user: CreateUser, session: Session = Depends(get_session)):
         account_number=account_number,
         amount=amount  # Welcome Offer
     )
-    
-    
+
+    account.balance += amount
+    session.add(account)
+
     session.add(deposit)
     session.commit()
     session.refresh(deposit)
-    
-    account.balance += amount
-    session.add(account)
-    
+
     return db_user
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me", response_model=UserResponse, tags=['auth'])
 def read_me(user: User = Depends(get_user)):
     return UserResponse(email=user.email)

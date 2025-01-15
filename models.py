@@ -14,6 +14,7 @@ class Account(SQLModel, table=True):
     creation_date: datetime = Field(default_factory=datetime.utcnow)
     account_number: str = Field(index=True, unique=True)
     isMain: bool = False
+    isActive: bool = True
 
 class Transaction(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
