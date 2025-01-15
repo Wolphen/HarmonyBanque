@@ -11,90 +11,91 @@ from route.auth import get_user
 router = APIRouter()
 
 async def process_transaction(transaction_id: int, session: Session):
-    await sleep(5)
+    await sleep(10)  
     with session:
         transaction = session.get(Transaction, transaction_id)
         if transaction and transaction.status == 1:
-            # Update the transaction status to 2 (completed)
+            
             transaction.status = 2
             session.add(transaction)
-            
-            # Credit the receiver's account
-            receiver_account = session.exec(select(Account).where(Account.account_number == transaction.receiver_id)).first()
+
+            receiver_account = session.exec(
+                select(Account).where(Account.account_number == transaction.receiver_id)
+            ).first()
             if receiver_account:
                 receiver_account.balance += transaction.amount
                 session.add(receiver_account)
-            
+
+                if not receiver_account.isMain and receiver_account.balance > 50000:
+                    receiver_user_id = receiver_account.user_id
+                    main_account = session.exec(
+                        select(Account).where(Account.user_id == receiver_user_id, Account.isMain == True)
+                    ).first()
+
+                    if main_account:
+                        excess_amount = receiver_account.balance - 50000
+                        transaction2 = Transaction(
+                            sender_id=receiver_account.account_number,
+                            receiver_id=main_account.account_number,
+                            amount=excess_amount,
+                            status=2 
+                        )
+                        main_account.balance += excess_amount
+                        receiver_account.balance = 50000
+
+                        session.add(receiver_account)
+                        session.add(main_account)
+                        session.add(transaction2)
+
             session.commit()
 
+
 @router.post("/", response_model=Transaction, tags=['transactions'])
-async def create_transaction(body: CreateTransaction, user: User = Depends(get_user), session: Session = Depends(get_session)) -> Transaction:
-    sender_account = session.exec(select(Account).where(Account.user_id == user.id, Account.account_number == body.sender_id, Account.isActive == True)).first()
+async def create_transaction(
+    body: CreateTransaction, 
+    user: User = Depends(get_user), 
+    session: Session = Depends(get_session)
+) -> Transaction:
+    sender_account = session.exec(
+        select(Account).where(
+            Account.user_id == user.id, 
+            Account.account_number == body.sender_id, 
+            Account.isActive == True
+        )
+    ).first()
+
     if sender_account is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
     
     if sender_account.balance < body.amount:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not enough money")
 
-    if body.amount < 1:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Amount must be positive and more than 1")
+    if body.amount < 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Amount must be positive")
 
-    receiver_account = session.exec(select(Account).where(Account.account_number == body.receiver_id,Account.isActive == True)).first()
+    receiver_account = session.exec(
+        select(Account).where(
+            Account.account_number == body.receiver_id,
+            Account.isActive == True
+        )
+    ).first()
+
     if receiver_account is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receiver account not found")
 
-    if receiver_account.isMain == False and (receiver_account.balance + body.amount) > 50000:
-        sender_account.balance -= body.amount
-        session.add(sender_account)
-        transaction = Transaction(
-            sender_id=body.sender_id,
-            receiver_id=body.receiver_id,
-            amount=body.amount,
-            status=1  
-        )
-        session.add(transaction)
-        session.commit()
-        session.refresh(transaction)
-        
-        receiver_user_id = receiver_account.user_id
-        mainAccount = session.exec(select(Account).where(Account.user_id == receiver_user_id, Account.isMain == True)).first()
-        
-        transaction2 = Transaction(
-            sender_id=receiver_account.account_number,
-            receiver_id=mainAccount.account_number,
-            amount=(receiver_account.balance + body.amount) - 50000,
-            status=2  
-        )
-        mainAccount.balance += (receiver_account.balance + body.amount) - 50000
-        receiver_account.balance = 50000
-        session.add(receiver_account)
-        session.add(mainAccount)
-        session.add(transaction2)
-        session.commit()
-        session.refresh(transaction2)
-        
-    else :
-        sender_account.balance -= body.amount
-        session.add(sender_account)
-        transaction = Transaction(
-            sender_id=body.sender_id,
-            receiver_id=body.receiver_id,
-            amount=body.amount,
-            status=1  
-        )
-        session.add(transaction)
-        session.commit()
-        session.refresh(transaction)
-        
-        
-        
+    sender_account.balance -= body.amount
+    session.add(sender_account)
+    transaction = Transaction(
+        sender_id=body.sender_id,
+        receiver_id=body.receiver_id,
+        amount=body.amount,
+        status=1 
+    )
+    session.add(transaction)
+    session.commit()
+    session.refresh(transaction)
 
-
-    
-
-    # Start the async task to process the transaction after 10 seconds
     asyncio.create_task(process_transaction(transaction.id, session))
-
     return transaction
 
 @router.post("/{transaction_id}/cancel", response_model=Transaction, tags=['transactions'])
