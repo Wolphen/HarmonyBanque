@@ -1,4 +1,3 @@
-import random
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from models import User, Account, Deposit, Transaction
@@ -6,6 +5,7 @@ from schemas import CreateUser, CreateAccount, CreateDeposit, IncomeResponse
 from database import get_session
 from typing import List, Optional
 from route.auth import get_user
+import random
 
 router = APIRouter()
 
@@ -24,7 +24,7 @@ def create_account(body: CreateAccount, user: User = Depends(get_user), session:
         user_id=user.id,  
         balance=0,
         account_number=account_number,  # Unique account number
-        isActive = True
+        isActive=True
     )
     session.add(account)
     session.commit()
@@ -36,7 +36,6 @@ def read_accounts(user: User = Depends(get_user), session: Session = Depends(get
     accounts = session.exec(select(Account).where(Account.user_id == user.id, Account.isActive == True)).all()
     return accounts
 
-
 @router.get("/{account_number}", response_model=Optional[Account], tags=['account'])
 def read_account(account_number: str, user: User = Depends(get_user), session: Session = Depends(get_session)):
     account = session.exec(select(Account).where(Account.account_number == account_number, Account.isActive == True, Account.user_id == user.id)).first()
@@ -44,13 +43,12 @@ def read_account(account_number: str, user: User = Depends(get_user), session: S
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found or you do not have permission to access this account")
     return account
 
-
-@router.post("/{account_number}/desactivate", tags=['account'])
+@router.post("/{account_number}/deactivate", tags=['account'])
 def deactivate_account(account_number: str, user: User = Depends(get_user), session: Session = Depends(get_session)):
     account = session.exec(select(Account).where(Account.account_number == account_number, Account.isActive == True, Account.user_id == user.id)).first()
     mainAccount = session.exec(select(Account).where(Account.user_id == user.id and Account.isMain == True)).first()
 
-    transactions = session.exec(select(Transaction).where((Transaction.sender_id == account_number) | (Transaction.receiver_id == account_number) , Transaction.status == 1)).all()
+    transactions = session.exec(select(Transaction).where((Transaction.sender_id == account_number) | (Transaction.receiver_id == account_number), Transaction.status == 1)).all()
 
     if account.isMain == True:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Impossible de desactiver votre compte principal")
@@ -59,7 +57,7 @@ def deactivate_account(account_number: str, user: User = Depends(get_user), sess
         transaction = Transaction(
             sender_id=account_number,
             receiver_id=mainAccount.account_number,
-            amount= account.balance,
+            amount=account.balance,
             status=2
         )   
             
@@ -75,10 +73,10 @@ def deactivate_account(account_number: str, user: User = Depends(get_user), sess
     elif account is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Compte introuvable")
     else:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Des transaction sont en cours")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Des transactions sont en cours")
 
 @router.get("/{account_number}/transactions", response_model=List[Transaction], tags=['account'])
-def read_transactions(account_number : str, session: Session = Depends(get_session), user: User = Depends(get_user)):
+def read_transactions(account_number: str, session: Session = Depends(get_session), user: User = Depends(get_user)):
     account = session.exec(select(Account).where(Account.account_number == account_number)).first()
     accountOwner = account.user_id
     if accountOwner != user.id:
@@ -139,3 +137,62 @@ def get_account_expenses(account_number: str, user: User = Depends(get_user), se
     ).all()
 
     return sent_transactions
+
+@router.get("/{account_number}/all_transactions", response_model=List[IncomeResponse], tags=['account'])
+def get_all_transactions(account_number: str, user: User = Depends(get_user), session: Session = Depends(get_session)) -> List[IncomeResponse]:
+    account = session.exec(
+        select(Account).where(
+            Account.account_number == account_number,
+            Account.user_id == user.id,
+            Account.isActive == True
+        )
+    ).first()
+
+    if not account:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
+
+    deposits = session.exec(
+        select(Deposit).where(Deposit.account_number == account_number)
+    ).all()
+
+    received_transactions = session.exec(
+        select(Transaction).where(Transaction.receiver_id == account_number)
+    ).all()
+
+    sent_transactions = session.exec(
+        select(Transaction).where(Transaction.sender_id == account_number)
+    ).all()
+
+    all_transactions = [
+        IncomeResponse(account_number=d.account_number, amount=d.amount, date=d.deposit_date, type="deposit")
+        for d in deposits
+    ] + [
+        IncomeResponse(account_number=t.receiver_id, amount=t.amount, date=t.transaction_date, type="received_transaction")
+        for t in received_transactions
+    ] + [
+        IncomeResponse(account_number=t.sender_id, amount=t.amount, date=t.transaction_date, type="sent_transaction")
+        for t in sent_transactions
+    ]
+
+    all_transactions.sort(key=lambda x: x.date, reverse=True)
+
+    return all_transactions
+
+
+@router.get("/{account_number}/account_know", response_model=List[str], tags=['account'])
+def account_know_for_account(account_number: str, user: User = Depends(get_user), session: Session = Depends(get_session)):
+    # Vérifier que l'utilisateur a accès au compte
+    account = session.exec(select(Account).where(Account.account_number == account_number, Account.user_id == user.id)).first()
+    
+    if not account:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found or you do not have permission to access this account")
+    
+    # Récupérer les transactions envoyées par ce compte
+    transactions = session.exec(select(Transaction).where(Transaction.sender_id == account_number)).all()
+    
+    recipient_account_numbers = {transaction.receiver_id for transaction in transactions}
+    
+    if not recipient_account_numbers:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No transactions found for this account")
+    
+    return list(recipient_account_numbers)
