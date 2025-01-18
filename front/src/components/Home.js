@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { AuthContext } from "../AuthContext";
-import Header from "./Header";
-import Footer from "./Footer";
+import Header from "../head_foot/Header";
+import Footer from "../head_foot/Footer";
 
 const Home = () => {
   const { token } = useContext(AuthContext);
