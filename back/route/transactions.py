@@ -34,7 +34,8 @@ async def complete_pending_transaction(transaction: Transaction, session: Sessio
                         sender_id=receiver_account.account_number,
                         receiver_id=main_account.account_number,
                         amount=excess_amount,
-                        status=2 
+                        status=2,
+                        description="Automatic transfer of excess amount over 50,000"
                     )
                     main_account.balance += excess_amount
                     receiver_account.balance = 50000
@@ -44,14 +45,12 @@ async def complete_pending_transaction(transaction: Transaction, session: Sessio
                     session.add(transaction2)
 
         session.commit()
-        
-        
+
 async def process_transaction(transaction_id: int, session: Session):
-    await sleep(10)  
+    await sleep(10)
     with session:
         transaction = session.get(Transaction, transaction_id)
         if transaction and transaction.status == 1:
-            
             transaction.status = 2
             session.add(transaction)
 
@@ -74,7 +73,8 @@ async def process_transaction(transaction_id: int, session: Session):
                             sender_id=receiver_account.account_number,
                             receiver_id=main_account.account_number,
                             amount=excess_amount,
-                            status=2 
+                            status=2,
+                            description="Automatic transfer of excess amount over 50,000"
                         )
                         main_account.balance += excess_amount
                         receiver_account.balance = 50000
@@ -84,7 +84,6 @@ async def process_transaction(transaction_id: int, session: Session):
                         session.add(transaction2)
 
             session.commit()
-
 
 @router.post("/", response_model=Transaction, tags=['transactions'])
 async def create_transaction(
@@ -125,7 +124,8 @@ async def create_transaction(
         sender_id=body.sender_id,
         receiver_id=body.receiver_id,
         amount=body.amount,
-        status=1 
+        status=1,
+        description=body.description  
     )
     session.add(transaction)
     session.commit()
@@ -144,20 +144,19 @@ def cancel_transaction(transaction_id: int, user: User = Depends(get_user), sess
     if sender_account is None or sender_account.user_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to cancel this transaction")
 
-    # Refund the sender's account balance
     sender_account.balance += transaction.amount
     session.add(sender_account)
 
-    # Update the transaction status to 0 (canceled)
     transaction.status = 0
+    transaction.description = "Transaction canceled by user"
     session.add(transaction)
     session.commit()
     session.refresh(transaction)
     return transaction
 
-@router.get("/{transaction_id}/details", response_model=Transaction, tags=['transactions'],)
-def read_transactions(transaction_id : int, session: Session = Depends(get_session), user: User = Depends(get_user)):
-    transaction = session.exec(select(Transaction).where(Transaction.id == transaction_id)).first() 
+@router.get("/{transaction_id}/details", response_model=Transaction, tags=['transactions'])
+def read_transactions(transaction_id: int, session: Session = Depends(get_session), user: User = Depends(get_user)):
+    transaction = session.exec(select(Transaction).where(Transaction.id == transaction_id)).first()
     if transaction is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pas de transaction trouvé")
     transactionSender = transaction.sender_id
@@ -169,7 +168,7 @@ def read_transactions(transaction_id : int, session: Session = Depends(get_sessi
     sender = accountSender.user_id
     receiver = accountReceiver.user_id
     
-    if user.id != sender or user.id != receiver:
+    if user.id != sender and user.id != receiver:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vous n'avez pas accès à cette transaction")
     
     return transaction
@@ -184,6 +183,9 @@ def delete_transaction(transaction_id: int, user: User = Depends(get_user), sess
     if sender_account is None or sender_account.user_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to delete this transaction")
 
-    session.delete(transaction)
+    transaction.status = 0
+    transaction.description = "Transaction deleted by user"
+    session.add(transaction)
     session.commit()
+    session.refresh(transaction)
     return transaction

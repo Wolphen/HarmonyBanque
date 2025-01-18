@@ -24,7 +24,8 @@ def create_account(body: CreateAccount, user: User = Depends(get_user), session:
         user_id=user.id,  
         balance=0,
         account_number=account_number,  # Unique account number
-        isActive=True
+        isActive=True,
+        name=body.name  # Ajouter le nom du compte
     )
     session.add(account)
     session.commit()
@@ -58,7 +59,8 @@ def deactivate_account(account_number: str, user: User = Depends(get_user), sess
             sender_id=account_number,
             receiver_id=mainAccount.account_number,
             amount=account.balance,
-            status=2
+            status=2,
+            description="Automatic transfer of remaining balance upon deactivation"  # Description automatique
         )   
             
         mainAccount.balance += account.balance
@@ -67,8 +69,9 @@ def deactivate_account(account_number: str, user: User = Depends(get_user), sess
         account.isActive = False
         session.add(account)
         session.add(mainAccount)
+        session.add(transaction)
         session.commit()
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Compte desactivé avec succès")
+        return {"detail": "Compte desactivé avec succès"}
         
     elif account is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Compte introuvable")
@@ -178,16 +181,13 @@ def get_all_transactions(account_number: str, user: User = Depends(get_user), se
 
     return all_transactions
 
-
 @router.get("/{account_number}/account_know", response_model=List[str], tags=['account'])
 def account_know_for_account(account_number: str, user: User = Depends(get_user), session: Session = Depends(get_session)):
-    # Vérifier que l'utilisateur a accès au compte
     account = session.exec(select(Account).where(Account.account_number == account_number, Account.user_id == user.id)).first()
     
     if not account:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found or you do not have permission to access this account")
     
-    # Récupérer les transactions envoyées par ce compte
     transactions = session.exec(select(Transaction).where(Transaction.sender_id == account_number)).all()
     
     recipient_account_numbers = {transaction.receiver_id for transaction in transactions}
