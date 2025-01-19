@@ -3,6 +3,8 @@ import axios from "axios";
 import { AuthContext } from "../../AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { Button, Label, TextInput } from "flowbite-react";
+import Header from "../head_foot/Header";
+import Footer from "../head_foot/Footer";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -27,9 +29,11 @@ const Login = () => {
   };
 
   return (
+    <div>
+    <Header />
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Connection</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Connexion</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <Label htmlFor="email" className="block text-gray-700 mb-2">
@@ -72,6 +76,8 @@ const Login = () => {
           </p>
         </form>
       </div>
+    </div>
+    <Footer />
     </div>
   );
 };

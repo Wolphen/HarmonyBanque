@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { Button, Label, TextInput } from "flowbite-react";
+import Header from "../head_foot/Header";
+import Footer from "../head_foot/Footer";
+
 
 const Register = () => {
   const [username, setUsername] = useState("");
@@ -33,7 +36,9 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div>
+      <Header />
+    <div className="p-6 flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center">
           Création de compte
@@ -94,6 +99,8 @@ const Register = () => {
           </p>
         </form>
       </div>
+    </div>
+    <Footer />
     </div>
   );
 };

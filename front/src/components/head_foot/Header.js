@@ -1,11 +1,12 @@
 import React, { useContext } from "react";
 import { AuthContext } from "../../AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "flowbite-react";
 
 const Header = () => {
   const { token, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -20,13 +21,15 @@ const Header = () => {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          onClick={() => navigate("/")}
-          color="light"
-          className="px-2 hover:bg-gray-200"
-        >
-          Accueil
-        </Button>
+        {location.pathname !== "/" && location.pathname !== "/home" && (
+          <Button
+            onClick={() => navigate(token ? "/" : "/home")}
+            color="light"
+            className="px-2 hover:bg-gray-200"
+          >
+            Accueil
+          </Button>
+        )}
         {token ? (
           <Button
             onClick={handleLogout}
@@ -36,9 +39,14 @@ const Header = () => {
             Deconnexion
           </Button>
         ) : (
-          <Button onClick={() => navigate("/login")} color="light">
-            Connexion
-          </Button>
+          <>
+            <Button onClick={() => navigate("/login")} color="light">
+              Connexion
+            </Button>
+            <Button onClick={() => navigate("/register")} color="light">
+              Inscription
+            </Button>
+          </>
         )}
       </div>
     </header>
