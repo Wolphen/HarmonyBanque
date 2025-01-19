@@ -1,7 +1,7 @@
 import React, { useState, useContext } from "react";
 import axios from "axios";
-import { AuthContext } from "../AuthContext";
-import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../../AuthContext";
+import { useNavigate, Link } from "react-router-dom";
 import { Button, Label, TextInput } from "flowbite-react";
 
 const Login = () => {
@@ -29,7 +29,7 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Connection</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <Label htmlFor="email" className="block text-gray-700 mb-2">
@@ -62,8 +62,14 @@ const Login = () => {
             color="light"
             className="w-full hover:bg-gray-200"
           >
-            Login
+            Envoyez
           </Button>
+          <p className="mt-4 text-center">
+            Pas de compte ?{" "}
+            <Link to="/register" className="text-blue-600 hover:underline">
+              Clique ici !
+            </Link>
+          </p>
         </form>
       </div>
     </div>

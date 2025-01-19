@@ -111,10 +111,10 @@ def get_account_income(account_number: str, user: User = Depends(get_user), sess
     ).all()
 
     income = [
-        IncomeResponse(account_number=d.account_number, amount=d.amount, date=d.deposit_date, type="deposit")
+        IncomeResponse(account_number=d.account_number, amount=d.amount, date=d.deposit_date, type="deposit", description=None)
         for d in deposits
     ] + [
-        IncomeResponse(account_number=t.receiver_id, amount=t.amount, date=t.transaction_date, type="transaction")
+        IncomeResponse(account_number=t.receiver_id, amount=t.amount, date=t.transaction_date, type="received_transaction", description=t.description)
         for t in received_transactions
     ]
 
@@ -167,13 +167,13 @@ def get_all_transactions(account_number: str, user: User = Depends(get_user), se
     ).all()
 
     all_transactions = [
-        IncomeResponse(account_number=d.account_number, amount=d.amount, date=d.deposit_date, type="deposit")
+        IncomeResponse(account_number=d.account_number, amount=d.amount, date=d.deposit_date, type="deposit", description=None)
         for d in deposits
     ] + [
-        IncomeResponse(account_number=t.receiver_id, amount=t.amount, date=t.transaction_date, type="received_transaction")
+        IncomeResponse(account_number=t.receiver_id, amount=t.amount, date=t.transaction_date, type="received_transaction", description=t.description)
         for t in received_transactions
     ] + [
-        IncomeResponse(account_number=t.sender_id, amount=t.amount, date=t.transaction_date, type="sent_transaction")
+        IncomeResponse(account_number=t.sender_id, amount=t.amount, date=t.transaction_date, type="sent_transaction", description=t.description)
         for t in sent_transactions
     ]
 

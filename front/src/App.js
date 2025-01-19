@@ -6,8 +6,10 @@ import {
   Navigate,
 } from "react-router-dom";
 import { AuthProvider, AuthContext } from "./AuthContext";
-import Login from "./components/Login";
+import Login from "./components/auth/Login";
 import Home from "./components/Home";
+import Register from "./components/auth/Register";
+import AccountDetails from "./components/account/AccountDetails";
 
 const App = () => {
   const { token } = useContext(AuthContext);
@@ -15,8 +17,10 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={<Login />} />
         <Route path="/" element={token ? <Home /> : <Navigate to="/login" />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/account/:accountNumber" element={<AccountDetails />} />
       </Routes>
     </Router>
   );

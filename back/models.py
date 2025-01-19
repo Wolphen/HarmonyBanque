@@ -6,7 +6,7 @@ class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(index=True, unique=True)
     hashed_password: str
-    username: str = Field(index=True, unique=True)  # Nouveau champ
+    username: str = Field(index=True, unique=True)  
 
 class Account(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -16,7 +16,7 @@ class Account(SQLModel, table=True):
     account_number: str = Field(index=True, unique=True)
     isMain: bool = False
     isActive: bool = True
-    name: str  # Nouveau champ
+    name: str  
 
 class Transaction(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -25,7 +25,7 @@ class Transaction(SQLModel, table=True):
     amount: float
     transaction_date: datetime = Field(default_factory=datetime.utcnow)
     status: int
-    description: Optional[str] = None  # Nouveau champ
+    description: Optional[str] = None  
 
 class Deposit(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
