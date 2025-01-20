@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../AuthContext";
 import Header from "../head_foot/Header";
 import Footer from "../head_foot/Footer";
+import ConfirmDeactivateModal from "./conFirmeDeactivateModal";
 
 const AccountDetails = () => {
   const { token } = useContext(AuthContext);
@@ -11,6 +12,8 @@ const AccountDetails = () => {
   const [account, setAccount] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (token) {
@@ -44,6 +47,30 @@ const AccountDetails = () => {
         });
     }
   }, [token, accountNumber]);
+
+  const handleDeactivateAccount = async () => {
+    try {
+      await axios.post(
+        `http://127.0.0.1:8000/accounts/${accountNumber}/deactivate`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log("Compte désactivé avec succès");
+      navigate("/");
+    } catch (error) {
+      console.error("Erreur lors de la désactivation du compte :", error);
+    }
+  };
+
+  const openModal = () => {
+    setModalIsOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalIsOpen(false);
+  };
 
   const filteredTransactions = transactions.filter((transaction) => {
     if (filter === "all") return true;
@@ -80,6 +107,8 @@ const AccountDetails = () => {
     }
   };
 
+  if (!token) return <p>Vous devez être connecté pour voir cette page</p>;
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <Header />
@@ -94,6 +123,15 @@ const AccountDetails = () => {
               <p className="text-lg">
                 Date de création : {formatDate(account.creation_date)}
               </p>
+              <p className="text-lg">Solde : {account.balance} €</p>
+              {account.isMain ? null : (
+                <button
+                  onClick={openModal}
+                  className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-300"
+                >
+                  Désactiver le compte
+                </button>
+              )}
             </div>
           ) : (
             <p>Chargement des détails du compte...</p>
@@ -152,6 +190,15 @@ const AccountDetails = () => {
         </div>
       </main>
       <Footer />
+      <ConfirmDeactivateModal
+        isOpen={modalIsOpen}
+        onRequestClose={closeModal}
+        onConfirm={() => {
+          handleDeactivateAccount();
+          closeModal();
+        }}
+        accountNumber={account?.account_number}
+      />
     </div>
   );
 };

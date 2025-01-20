@@ -12,9 +12,6 @@ class LoginUser(BaseModel):
     password: str
 
 class CreateAccount(BaseModel):
-    balance: float
-    account_number: str
-    isMain: bool = False
     name: str  
 
 class CreateTransaction(BaseModel):

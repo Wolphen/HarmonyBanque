@@ -11,6 +11,9 @@ import Home from "./components/HomeC";
 import Register from "./components/auth/Register";
 import AccountDetails from "./components/account/AccountDetails";
 import HomeNC from "./components/HomeNC";
+import Exercice from "./components/exo/exercice";
+import NotFound from "./components/head_foot/notFound";
+import AccountCreate from "./components/account/AccountCreate";
 
 const App = () => {
   const { token } = useContext(AuthContext);
@@ -23,6 +26,9 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/account/:accountNumber" element={<AccountDetails />} />
+        <Route path="/exercice" element={<Exercice />} />
+        <Route path="*" element={<NotFound />} />
+        <Route path="/account/create" element={<AccountCreate />} />
       </Routes>
     </Router>
   );

@@ -30,54 +30,54 @@ const Login = () => {
 
   return (
     <div>
-    <Header />
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Connexion</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <Label htmlFor="email" className="block text-gray-700 mb-2">
-              Email:
-            </Label>
-            <TextInput
-              id="email"
-              type="text"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full"
-              required
-            />
-          </div>
-          <div className="mb-6">
-            <Label htmlFor="password" className="block text-gray-700 mb-2">
-              Password:
-            </Label>
-            <TextInput
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full"
-              required
-            />
-          </div>
-          <Button
-            type="submit"
-            color="light"
-            className="w-full hover:bg-gray-200"
-          >
-            Envoyez
-          </Button>
-          <p className="mt-4 text-center">
-            Pas de compte ?{" "}
-            <Link to="/register" className="text-blue-600 hover:underline">
-              Clique ici !
-            </Link>
-          </p>
-        </form>
+      <Header />
+      <div className="h-fit p-10 flex items-center justify-center bg-gray-100">
+        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+          <h2 className="text-2xl font-bold mb-6 text-center">Connexion</h2>
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <Label htmlFor="email" className="block text-gray-700 mb-2">
+                Email:
+              </Label>
+              <TextInput
+                id="email"
+                type="text"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full"
+                required
+              />
+            </div>
+            <div className="mb-6">
+              <Label htmlFor="password" className="block text-gray-700 mb-2">
+                Password:
+              </Label>
+              <TextInput
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full"
+                required
+              />
+            </div>
+            <Button
+              type="submit"
+              color="light"
+              className="w-full hover:bg-gray-200"
+            >
+              Envoyez
+            </Button>
+            <p className="mt-4 text-center">
+              Pas de compte ?{" "}
+              <Link to="/register" className="text-blue-600 hover:underline">
+                Clique ici !
+              </Link>
+            </p>
+          </form>
+        </div>
       </div>
-    </div>
-    <Footer />
+      <Footer />
     </div>
   );
 };

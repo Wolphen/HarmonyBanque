@@ -5,6 +5,7 @@ import { AuthContext } from "../AuthContext";
 import Header from "./head_foot/Header";
 import Footer from "./head_foot/Footer";
 import AccountCard from "./account/AccountCard"; // Importer le composant AccountCard
+import { Button } from "flowbite-react";
 
 const Home = () => {
   const { token } = useContext(AuthContext);
@@ -51,19 +52,27 @@ const Home = () => {
               <h1 className="text-2xl font-bold mb-4">
                 Bonjour {user.username}
               </h1>
-              <div className="mt-4">
+              <div className="mt-4 flex items-center justify-between w-full justify-center">
                 <h2 className="text-xl font-bold mb-4">Vos Comptes</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 overflow-x-auto">
-                  {accounts.map((account) => (
-                    <a
-                      key={account.id}
-                      onClick={() => handleAccountClick(account.account_number)}
-                      className="cursor-pointer hover:bg-slate-400"
-                    >
-                      <AccountCard account={account} />
-                    </a>
-                  ))}
-                </div>
+                <Button
+                  outline
+                  gradientDuoTone="tealToLime"
+                  className="ml-auto self-start mb-4"
+                  onClick={() => navigate("/account/create")}
+                >
+                  Crée un nouveau Compte
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+                {accounts.map((account) => (
+                  <button
+                    key={account.id}
+                    onClick={() => handleAccountClick(account.account_number)}
+                    className="cursor-pointer text-left p-0 border-none bg-transparent hover:shadow-xl"
+                  >
+                    <AccountCard account={account} />
+                  </button>
+                ))}
               </div>
             </div>
           ) : (
