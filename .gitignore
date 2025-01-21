@@ -2,3 +2,4 @@
 .vscode/
 .idea/
 database.db
+./database.db
