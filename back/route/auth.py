@@ -6,6 +6,7 @@ from models import User, Account, Deposit
 from schemas import CreateUser, UserResponse, CreateAccount, CreateDeposit, LoginUser, ChangePassword, ChangeEmail
 from database import get_session, engine
 from sqlmodel import select, Session
+import random
 
 router = APIRouter()
 
@@ -50,6 +51,10 @@ def register(user: CreateUser, session: Session = Depends(get_session)):
     existing_user = session.exec(select(User).where(User.email == user.email)).first()
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+    
+    existing_username = session.exec(select(User).where(User.username == user.username)).first()
+    if existing_username:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already registered")
     
     hashed_password = pwd_context.hash(user.password)
     db_user = User(email=user.email, hashed_password=hashed_password, username=user.username)
@@ -106,6 +111,9 @@ def change_password(data: ChangePassword, user: User = Depends(get_user), sessio
 def change_email(data: ChangeEmail, user: User = Depends(get_user), session: Session = Depends(get_session)):
     if user.email != data.current_email:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current email is incorrect")
+    
+    if not pwd_context.verify(data.password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Password is incorrect")
     
     existing_user = session.exec(select(User).where(User.email == data.new_email)).first()
     if existing_user:
