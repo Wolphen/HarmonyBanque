@@ -21,6 +21,7 @@ class CreateTransaction(BaseModel):
     description: Optional[str] = None  
 
 class CreateDeposit(BaseModel):
+    account_number: str
     amount: float
 
 class UserResponse(BaseModel):
@@ -36,3 +37,12 @@ class IncomeResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        
+class ChangePassword(BaseModel):
+    current_password: str
+    new_password: str
+    
+class ChangeEmail(BaseModel):
+    current_email: str
+    new_email: str
+    password: str 

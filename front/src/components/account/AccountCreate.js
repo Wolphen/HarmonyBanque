@@ -17,7 +17,7 @@ const AccountCreate = () => {
     try {
       const response = await axios.post(
         "http://127.0.0.1:8000/accounts/",
-        { name: accountName }, // Envoyer le champ 'name' attendu par le backend
+        { name: accountName },
         {
           headers: {
             Authorization: `Bearer ${token}`,

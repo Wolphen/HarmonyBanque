@@ -3,10 +3,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from passlib.context import CryptContext
 import jwt
 from models import User, Account, Deposit
-from schemas import CreateUser, UserResponse, CreateAccount, CreateDeposit, LoginUser
+from schemas import CreateUser, UserResponse, CreateAccount, CreateDeposit, LoginUser, ChangePassword, ChangeEmail
 from database import get_session, engine
 from sqlmodel import select, Session
-import random
 
 router = APIRouter()
 
@@ -91,3 +90,27 @@ def register(user: CreateUser, session: Session = Depends(get_session)):
 @router.get("/me", response_model=UserResponse, tags=['auth'])
 def read_me(user: User = Depends(get_user)):
     return UserResponse(email=user.email, username=user.username)
+
+@router.post("/change-password", tags=['auth'])
+def change_password(data: ChangePassword, user: User = Depends(get_user), session: Session = Depends(get_session)):
+    if not pwd_context.verify(data.current_password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current password is incorrect")
+    
+    user.hashed_password = pwd_context.hash(data.new_password)
+    session.add(user)
+    session.commit()
+    return {"message": "Password changed successfully"}
+
+@router.post("/change-email", tags=['auth'])
+def change_email(data: ChangeEmail, user: User = Depends(get_user), session: Session = Depends(get_session)):
+    if user.email != data.current_email:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current email is incorrect")
+    
+    existing_user = session.exec(select(User).where(User.email == data.new_email)).first()
+    if existing_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+    
+    user.email = data.new_email
+    session.add(user)
+    session.commit()
+    return {"message": "Email changed successfully"}

@@ -14,10 +14,10 @@ const Header = () => {
   };
 
   return (
-    <header className="w-full bg-white shadow-md py-4 flex items-center justify-between px-6 gap-2">
+    <header className="w-full bg-white shadow-md py-2 flex items-center justify-between px-4 gap-2">
       <div className="flex items-center">
-        <img src="/Harmony.png" alt="Harmony Banque" className="h-16" />
-        <h1 className="text-4xl font-bold text-black ml-4">Harmony Banque</h1>
+        <img src="/Harmony.png" alt="Harmony Banque" className="h-12" />
+        <h1 className="text-2xl font-bold text-black ml-2">Harmony Banque</h1>
       </div>
 
       <div className="flex items-center gap-2">
@@ -25,25 +25,55 @@ const Header = () => {
           <Button
             onClick={() => navigate(token ? "/" : "/home")}
             color="light"
-            className="px-2 hover:bg-gray-200"
+            className="px-2 hover:bg-gray-200 text-xs"
+            size="xs"
           >
             Accueil
           </Button>
         )}
         {token ? (
-          <Button
-            onClick={handleLogout}
-            color="light"
-            className="px-2 hover:bg-gray-200"
-          >
-            Deconnexion
-          </Button>
+          <>
+            <Button
+              onClick={() => navigate("/deposit")}
+              color="light"
+              className="text-xs"
+              size="xs"
+            >
+              Depot
+            </Button>
+            <Button
+              onClick={() => navigate("/profil")}
+              color="light"
+              className="px-2 hover:bg-gray-200 text-xs"
+              size="xs"
+            >
+              Mon compte
+            </Button>
+            <Button
+              onClick={handleLogout}
+              color="light"
+              className="px-2 hover:bg-gray-200 text-xs"
+              size="xs"
+            >
+              Deconnexion
+            </Button>
+          </>
         ) : (
           <>
-            <Button onClick={() => navigate("/login")} color="light">
+            <Button
+              onClick={() => navigate("/login")}
+              color="light"
+              className="text-xs"
+              size="xs"
+            >
               Connexion
             </Button>
-            <Button onClick={() => navigate("/register")} color="light">
+            <Button
+              onClick={() => navigate("/register")}
+              color="light"
+              className="text-xs"
+              size="xs"
+            >
               Inscription
             </Button>
           </>

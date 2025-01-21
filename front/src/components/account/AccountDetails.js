@@ -5,6 +5,8 @@ import { AuthContext } from "../../AuthContext";
 import Header from "../head_foot/Header";
 import Footer from "../head_foot/Footer";
 import ConfirmDeactivateModal from "./conFirmeDeactivateModal";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 const AccountDetails = () => {
   const { token } = useContext(AuthContext);
@@ -83,6 +85,18 @@ const AccountDetails = () => {
     return true;
   });
 
+  const groupedTransactions = filteredTransactions.reduce(
+    (acc, transaction) => {
+      const date = new Date(transaction.date).toLocaleDateString("fr-FR");
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(transaction);
+      return acc;
+    },
+    {}
+  );
+
   const formatDate = (dateString) => {
     const options = {
       year: "numeric",
@@ -107,27 +121,70 @@ const AccountDetails = () => {
     }
   };
 
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    doc.text("Relevé de compte", 14, 16);
+
+    // Utilisation de splitTextToSize pour gérer les retours à la ligne
+    const accountNameText = doc.splitTextToSize(
+      `Nom du compte : ${account.name}`,
+      180
+    );
+    const accountNumberText = doc.splitTextToSize(
+      `Numéro: ${account.account_number}`,
+      180
+    );
+    const accountBalanceText = doc.splitTextToSize(
+      `Solde: ${account.balance} €`,
+      180
+    );
+
+    doc.text(accountNameText, 14, 22);
+    doc.text(accountNumberText, 14, 28);
+    doc.text(accountBalanceText, 14, 34);
+
+    const tableColumn = ["Date", "Type", "Montant", "Description"];
+    const tableRows = [];
+
+    filteredTransactions.forEach((transaction) => {
+      const transactionData = [
+        formatDate(transaction.date),
+        translateType(transaction.type),
+        `${transaction.amount} €`,
+        transaction.description || "",
+      ];
+      tableRows.push(transactionData);
+    });
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 40,
+    });
+    doc.save(`releve_compte_${account.account_number}.pdf`);
+  };
+
   if (!token) return <p>Vous devez être connecté pour voir cette page</p>;
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <Header />
-      <main className="flex-grow flex flex-col items-center pt-4">
-        <div className="bg-white p-6 rounded-lg shadow-md text-center w-full max-w-4xl">
+      <main className="flex-grow flex flex-col items-center pt-2">
+        <div className="bg-white p-4 rounded-lg shadow-md text-center w-full max-w-4xl">
           {account ? (
-            <div className="mb-6 pb-4 rounded-lg shadow-md bg-gray-50">
-              <p className="text-lg font-semibold">{account.name}</p>
-              <p className="text-lg">
+            <div className="mb-4 pb-2 rounded-lg shadow-md bg-gray-50">
+              <p className="text-md font-semibold">{account.name}</p>
+              <p className="text-md">
                 Numéro de compte : {account.account_number}
               </p>
-              <p className="text-lg">
+              <p className="text-md">
                 Date de création : {formatDate(account.creation_date)}
               </p>
-              <p className="text-lg">Solde : {account.balance} €</p>
+              <p className="text-md">Solde : {account.balance} €</p>
               {account.isMain ? null : (
                 <button
                   onClick={openModal}
-                  className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-300"
+                  className="mt-2 px-2 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-300 text-sm"
                 >
                   Désactiver le compte
                 </button>
@@ -136,10 +193,10 @@ const AccountDetails = () => {
           ) : (
             <p>Chargement des détails du compte...</p>
           )}
-          <div className="mb-4 flex justify-center space-x-4">
+          <div className="mb-2 flex justify-center space-x-2">
             <button
               onClick={() => setFilter("all")}
-              className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
+              className={`px-2 py-1 rounded-lg transition-colors duration-300 text-sm ${
                 filter === "all" ? "bg-blue-600 text-white" : "bg-gray-200"
               }`}
             >
@@ -147,7 +204,7 @@ const AccountDetails = () => {
             </button>
             <button
               onClick={() => setFilter("income")}
-              className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
+              className={`px-2 py-1 rounded-lg transition-colors duration-300 text-sm ${
                 filter === "income" ? "bg-blue-600 text-white" : "bg-gray-200"
               }`}
             >
@@ -155,38 +212,55 @@ const AccountDetails = () => {
             </button>
             <button
               onClick={() => setFilter("expenses")}
-              className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
+              className={`px-2 py-1 rounded-lg transition-colors duration-300 text-sm ${
                 filter === "expenses" ? "bg-blue-600 text-white" : "bg-gray-200"
               }`}
             >
               Dépenses
             </button>
           </div>
-          <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto mt-4">
-            {filteredTransactions.length > 0 ? (
-              filteredTransactions.map((transaction) => (
-                <div
-                  key={transaction.date}
-                  className="bg-white p-4 rounded-lg shadow-md border border-gray-200"
-                >
-                  <p className="text-gray-700">
-                    Type: {translateType(transaction.type)}
-                  </p>
-                  <p className="text-gray-700">
-                    Montant: ${transaction.amount}
-                  </p>
-                  <p className="text-gray-700">
-                    Description: {transaction.description}
-                  </p>
-                  <p className="text-gray-700">
-                    Date: {formatDate(transaction.date)}
-                  </p>
-                </div>
-              ))
+          <div className="mb-4 overflow-x-auto">
+            {Object.keys(groupedTransactions).length > 0 ? (
+              <table className="min-w-full bg-white">
+                <thead>
+                  <tr>
+                    <th className="py-2 px-4 border-b">Date</th>
+                    <th className="py-2 px-4 border-b">Type</th>
+                    <th className="py-2 px-4 border-b">Montant</th>
+                    <th className="py-2 px-4 border-b">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.keys(groupedTransactions).map((date) =>
+                    groupedTransactions[date].map((transaction) => (
+                      <tr key={transaction.date} className="bg-white">
+                        <td className="py-2 px-4 border-b">
+                          {formatDate(transaction.date)}
+                        </td>
+                        <td className="py-2 px-4 border-b">
+                          {translateType(transaction.type)}
+                        </td>
+                        <td className="py-2 px-4 border-b">
+                          {transaction.amount} €
+                        </td>
+                        <td className="py-2 px-4 border-b">
+                          {transaction.description}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             ) : (
               <p className="text-gray-700">Aucune transaction trouvée</p>
             )}
           </div>
+          <button
+            onClick={generatePDF}
+            className="mt-2 px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-300 text-sm"
+          >
+            Générer PDF
+          </button>
         </div>
       </main>
       <Footer />

@@ -18,7 +18,7 @@ const HomeNC = () => {
         >
           <div className="container mx-auto py-20 text-center text-white">
             <h1 className="text-5xl font-bold">Harmony Banque</h1>
-            <p className="mt-4 text-xl">La banque, mais à la maison</p>
+            <p className="mt-4 text-xl">La banque, mais dans la poche</p>
           </div>
         </section>
 

@@ -13,7 +13,7 @@ app = FastAPI()
 
 # Configuration CORS
 origins = [
-    "http://localhost:3000",  # L'URL de votre front-end React
+    "http://localhost:3000",  
     "http://127.0.0.1:3000",
 ]
 

@@ -9,6 +9,7 @@ import Footer from "../head_foot/Footer";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -25,6 +26,7 @@ const Login = () => {
       navigate("/");
     } catch (error) {
       console.error("Error logging in", error);
+      setError("Email ou mot de passe incorrect. Veuillez réessayer.");
     }
   };
 
@@ -34,6 +36,7 @@ const Login = () => {
       <div className="h-fit p-10 flex items-center justify-center bg-gray-100">
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
           <h2 className="text-2xl font-bold mb-6 text-center">Connexion</h2>
+          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <Label htmlFor="email" className="block text-gray-700 mb-2">
@@ -50,7 +53,7 @@ const Login = () => {
             </div>
             <div className="mb-6">
               <Label htmlFor="password" className="block text-gray-700 mb-2">
-                Password:
+                Mot de passe:
               </Label>
               <TextInput
                 id="password"

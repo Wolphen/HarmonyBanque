@@ -42,6 +42,11 @@ const Home = () => {
     navigate(`/account/${accountNumber}`);
   };
 
+  const totalBalance = accounts.reduce(
+    (sum, account) => sum + account.balance,
+    0
+  );
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <Header />
@@ -62,6 +67,11 @@ const Home = () => {
                 >
                   Crée un nouveau Compte
                 </Button>
+              </div>
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold">
+                  Solde total : {totalBalance} €
+                </h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
                 {accounts.map((account) => (
