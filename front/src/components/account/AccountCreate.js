@@ -2,22 +2,24 @@ import axios from "axios";
 import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../AuthContext";
-import { Button, Label, TextInput } from "flowbite-react";
+import { Button, Label, Select, TextInput } from "flowbite-react";
 import Footer from "../head_foot/Footer";
 import Header from "../head_foot/Header";
 
 const AccountCreate = () => {
   const [accountName, setAccountName] = useState("");
+  const [accountType, setAccountType] = useState("");
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("j'envoie le name avec :", accountName);
+    console.log("j'envoie le type avec :", accountType);
     try {
       const response = await axios.post(
         "http://127.0.0.1:8000/accounts/",
-        { name: accountName },
+        { name: accountName, type: accountType },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -52,6 +54,21 @@ const AccountCreate = () => {
                 className="w-full"
                 required
               />
+              <Label htmlFor="accountType" className="block text-gray-700 mb-2">
+                Type de compte :
+              </Label>
+              <Select
+                id="accountType"
+                value={accountType}
+                onChange={(e) => setAccountType(e.target.value)}
+                className="w-full"
+              >
+                <option value="livret-a">Livret A</option>
+                <option value="pel">Plan d'Epargne Logement</option>
+                <option value="pea">Plan d'Epargne en Actions</option>
+                <option value="assurance-vie">Assurance Vie</option>
+                <option value="livret-jeune">Livret Jeune</option>
+              </Select>
             </div>
             <Button
               type="submit"
