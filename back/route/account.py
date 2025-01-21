@@ -25,7 +25,8 @@ def create_account(body: CreateAccount, user: User = Depends(get_user), session:
         balance=0,
         account_number=account_number,  
         isActive=True,
-        name=body.name  
+        name=body.name,  
+        type=body.type
     )
     session.add(account)
     session.commit()

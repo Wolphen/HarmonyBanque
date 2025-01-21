@@ -13,6 +13,7 @@ class LoginUser(BaseModel):
 
 class CreateAccount(BaseModel):
     name: str  
+    type: str
 
 class CreateTransaction(BaseModel):
     sender_id: str

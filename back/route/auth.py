@@ -65,7 +65,8 @@ def register(user: CreateUser, session: Session = Depends(get_session)):
         balance=0.0,  
         account_number=account_number, 
         isMain=True, 
-        name="Compte courant"  
+        name="Compte courant",  
+        type="compte-courant"
     )
     
     session.add(account)

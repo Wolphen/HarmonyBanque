@@ -17,6 +17,7 @@ class Account(SQLModel, table=True):
     isMain: bool = False
     isActive: bool = True
     name: str  
+    type: str
 
 class Transaction(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
