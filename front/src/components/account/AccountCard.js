@@ -8,6 +8,7 @@ const AccountCard = ({ account }) => {
       }`}
     >
       <h3 className="text-lg font-bold mb-2">{account.name}</h3>
+      <p className="text-gray-700">{account.type}</p>
       <p className="text-gray-700">{account.account_number}</p>
       <p className="text-gray-700">{account.balance} €</p>
     </div>
