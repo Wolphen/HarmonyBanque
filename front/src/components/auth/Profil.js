@@ -1,7 +1,7 @@
 import React, { useState, useContext } from "react";
 import axios from "axios";
 import { AuthContext } from "../../AuthContext";
-import { Button, Label, TextInput, Card } from "flowbite-react";
+import { Button, Label, TextInput, Card, Progress } from "flowbite-react";
 import Header from "../head_foot/Header";
 import Footer from "../head_foot/Footer";
 
@@ -12,12 +12,36 @@ const Profile = () => {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [currentEmail, setCurrentEmail] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const [emailPassword, setEmailPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [passwordStrength, setPasswordStrength] = useState(0);
+
+  const validatePassword = (password) => {
+    const passwordRegex =
+      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+}{":;'?/>.<,])(?=.*[A-Z])(?=.*[a-z]).{8,}$/;
+    return passwordRegex.test(password);
+  };
+
+  const calculatePasswordStrength = (password) => {
+    let strength = 0;
+    if (password.length >= 8) strength += 20;
+    if (/[A-Z]/.test(password)) strength += 20;
+    if (/[a-z]/.test(password)) strength += 20;
+    if (/\d/.test(password)) strength += 20;
+    if (/[!@#$%^&*()_+}{":;'?/>.<,]/.test(password)) strength += 20;
+    return strength;
+  };
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
+    if (!validatePassword(newPassword)) {
+      setPasswordError(
+        "Le mot de passe doit contenir au moins 8 caractères, dont une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial."
+      );
+      return;
+    }
     if (newPassword !== confirmNewPassword) {
       setPasswordError("Les nouveaux mots de passe ne correspondent pas.");
       return;
@@ -25,7 +49,7 @@ const Profile = () => {
     try {
       await axios.post(
         "http://127.0.0.1:8000/auth/change-password",
-        { currentPassword, newPassword },
+        { current_password: currentPassword, new_password: newPassword },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -47,7 +71,11 @@ const Profile = () => {
     try {
       await axios.post(
         "http://127.0.0.1:8000/auth/change-email",
-        { currentEmail, newEmail },
+        {
+          current_email: currentEmail,
+          new_email: newEmail,
+          password: emailPassword,
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -60,6 +88,20 @@ const Profile = () => {
       console.error("Erreur lors du changement d'email", error);
       setEmailError("Erreur lors du changement d'email. Veuillez réessayer.");
     }
+  };
+
+  const handleNewPasswordChange = (e) => {
+    const newPassword = e.target.value;
+    setNewPassword(newPassword);
+    setPasswordStrength(calculatePasswordStrength(newPassword));
+  };
+
+  const getPasswordStrengthColor = () => {
+    if (passwordStrength < 41) return "red"; // Red
+    if (passwordStrength === 40) return "orange"; // Orange
+    if (passwordStrength === 60) return "yellow"; // Yellow
+    if (passwordStrength === 80) return "yellow"; // Yellow
+    if (passwordStrength === 100) return "green"; // Green
   };
 
   return (
@@ -106,9 +148,14 @@ const Profile = () => {
                     id="newPassword"
                     type="password"
                     value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    onChange={handleNewPasswordChange}
                     className="w-full"
                     required
+                  />
+                  <Progress
+                    progress={passwordStrength}
+                    color={getPasswordStrengthColor()}
+                    className="mt-2"
                   />
                 </div>
                 <div className="mb-4">
@@ -154,7 +201,7 @@ const Profile = () => {
                   </Label>
                   <TextInput
                     id="currentEmail"
-                    type="text"
+                    type="email"
                     value={currentEmail}
                     onChange={(e) => setCurrentEmail(e.target.value)}
                     className="w-full"
@@ -170,9 +217,25 @@ const Profile = () => {
                   </Label>
                   <TextInput
                     id="newEmail"
-                    type="text"
+                    type="email"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
+                    className="w-full"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <Label
+                    htmlFor="emailPassword"
+                    className="block text-gray-700 mb-2"
+                  >
+                    Mot de passe :
+                  </Label>
+                  <TextInput
+                    id="emailPassword"
+                    type="password"
+                    value={emailPassword}
+                    onChange={(e) => setEmailPassword(e.target.value)}
                     className="w-full"
                     required
                   />

@@ -1,14 +1,14 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional
 
 class CreateUser(BaseModel):
-    email: str
+    email: EmailStr
+    username: str
     password: str
-    username: str  
 
 class LoginUser(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 class CreateAccount(BaseModel):
@@ -26,7 +26,7 @@ class CreateDeposit(BaseModel):
     amount: float
 
 class UserResponse(BaseModel):
-    email: str
+    email: EmailStr
     username: str  
 
 class IncomeResponse(BaseModel):
@@ -44,6 +44,6 @@ class ChangePassword(BaseModel):
     new_password: str
     
 class ChangeEmail(BaseModel):
-    current_email: str
-    new_email: str
+    current_email: EmailStr
+    new_email: EmailStr
     password: str 
